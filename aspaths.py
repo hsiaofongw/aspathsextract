@@ -1,7 +1,8 @@
 import mrtparse as mp
 import sys
 
-def get_as_paths(ent, as_paths):
+# generator, yield a path each time.
+def get_as_paths(ent):
     if not (13 in ent["type"]):
         return
 
@@ -15,7 +16,7 @@ def get_as_paths(ent, as_paths):
           for path_val in path_attr["value"]:
               if not (2 in path_val["type"]):
                   continue
-              as_paths.append(path_val['value'])
+              yield path_val['value']
 
 def main():
     path = sys.argv[1]
@@ -28,15 +29,17 @@ def main():
         limit=int(sys.argv[2])
 
     reader = mp.Reader(path)
-    n=0
+    pathset = set()
     for chunk in reader:
         entry = chunk.data
-        as_paths = []
-        get_as_paths(entry, as_paths)
-        for asp in as_paths:
-            print(",".join(asp))
-            n=n+1
-            if limit != -1 and n>=limit:
+        for asp in get_as_paths(entry):
+            path_key = ",".join(asp)
+            if path_key in pathset:
+                continue
+            pathset.add(path_key)
+            print(path_key)
+            limit = limit - 1
+            if limit == 0:
                 return
 
 if __name__ == '__main__':
