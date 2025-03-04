@@ -93,6 +93,24 @@ func (g *Graph) GetNumOutbounds(nodeId string) int {
 	return 0
 }
 
+// count neighbors, for both inbound and outbound
+func (g *Graph) GetNumNeighbors(nodeId string) int {
+	res := make(map[string]bool)
+	if ibs, found := g.inbounds[nodeId]; found {
+		for _, ib := range ibs {
+			res[ib] = true
+		}
+	}
+
+	if m, found := g.outlinks[nodeId]; found {
+		for k := range m {
+			res[k] = true
+		}
+	}
+
+	return len(res)
+}
+
 func main() {
 	cnt := 0
 	lineReader := bufio.NewReader(os.Stdin)
@@ -128,9 +146,11 @@ func main() {
 		cnt++
 	}
 
+	fmt.Println("begin_data:")
+
 	fmt.Printf("number_of_nodes: %d\n", g.GetNumNodes())
 	allNodes := g.GetNodes()
-	fmt.Printf("nodes:\n")
+	fmt.Println("nodes:")
 	for _, node := range allNodes {
 		fmt.Println(node)
 	}
@@ -138,16 +158,18 @@ func main() {
 		fmt.Printf("target_node: %s\n", targetNodeId)
 		inbounds := g.GetInbounds(targetNodeId)
 		fmt.Printf("num_inbounds: %d\n", len(inbounds))
-		fmt.Printf("inbounds:\n")
+		fmt.Println("inbounds:")
 		for _, nodeId := range inbounds {
 			fmt.Println(nodeId)
 		}
 
 		fmt.Printf("num_outbounds: %d\n", g.GetNumOutbounds(targetNodeId))
 		outbounds := g.GetOutbounds(targetNodeId)
-		fmt.Printf("outbounds:\n")
+		fmt.Println("outbounds:")
 		for _, nodeId := range outbounds {
 			fmt.Println(nodeId)
 		}
+
+		fmt.Printf("num_neighbors_total: %d\n", g.GetNumNeighbors(targetNodeId))
 	}
 }
