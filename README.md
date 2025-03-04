@@ -20,6 +20,12 @@ curl -Lo - https://mrt.collector.dn42/master6_latest.mrt.bz2 | \
   bzip2 -d > master6_latest.mrt
 ```
 
+Preview MRTDUMP data:
+
+```
+python3 mrt2json.py master6_latest.mrt 10 | jq
+```
+
 Get BGP ASPaths:
 
 ```
