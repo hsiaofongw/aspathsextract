@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -150,8 +152,9 @@ func NewPageRank(g *Graph, params *PageRankAlgoParams) *PageRank {
 	return pr
 }
 
-func (pr *PageRank) UpdateOneNode(targetNodeId string) {
+func (pr *PageRank) UpdateOneNode(targetNodeId string) float64 {
 	inbNodes := pr.g.GetInbounds(targetNodeId)
+	prev := pr.scores[targetNodeId]
 	var newProb float64 = 0
 	N := pr.g.GetNumNodes()
 	d := pr.params.DumpingFactor
@@ -166,13 +169,31 @@ func (pr *PageRank) UpdateOneNode(targetNodeId string) {
 
 	newProb += (1 - d) * (float64(1) / float64(N))
 	pr.scores[targetNodeId] = newProb
+	diff := prev - newProb
+	return diff * diff
 }
 
-func (pr *PageRank) UpdateAllNodes() {
+func (pr *PageRank) UpdateAllNodes() float64 {
 	nodes := pr.g.GetNodes()
+	var diff float64 = 0
+	var norm2 float64 = 0
 	for _, node := range nodes {
-		pr.UpdateOneNode(node)
+		diff += pr.UpdateOneNode(node)
+		s := pr.scores[node]
+		norm2 += s * s
 	}
+
+	return math.Sqrt(diff)
+}
+
+func (pr *PageRank) GetScore(node string) float64 {
+	return pr.scores[node]
+}
+
+type NodeScore struct {
+	NodeId string
+	Score  float64
+	Rank   int
 }
 
 func main() {
@@ -230,5 +251,30 @@ func main() {
 		}
 
 		fmt.Printf("num_neighbors_total: %d\n", g.GetNumNeighbors(targetNodeId))
+	}
+
+	pr := NewPageRank(g, nil)
+	for i := 0; i < 100; i++ {
+		fmt.Printf("iteration: %d diff: %f\n", i, pr.UpdateAllNodes())
+	}
+
+	nodes := g.GetNodes()
+	ns := make([]*NodeScore, 0)
+	for _, node := range nodes {
+		x := new(NodeScore)
+		x.NodeId = node
+		x.Score = pr.GetScore(node)
+		ns = append(ns, x)
+	}
+
+	sort.SliceStable(ns, func(i, j int) bool {
+		return ns[i].Score >= ns[j].Score
+	})
+
+	fmt.Println("start_pagerank_data:")
+	for i := 0; i < len(ns); i++ {
+		node := ns[i]
+		node.Rank = i
+		fmt.Printf("[%d] %s -> %f\n", node.Rank, node.NodeId, node.Score)
 	}
 }
