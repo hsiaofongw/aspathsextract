@@ -6,7 +6,7 @@ def get_as_paths(ent):
     if not (13 in ent["type"]):
         return
 
-    if not (4 in ent["subtype"]):
+    if not ((4 in ent["subtype"]) or (10 in ent["subtype"])):
         return
 
     for rib_ent in ent['rib_entries']:
