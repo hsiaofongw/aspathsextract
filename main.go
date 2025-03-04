@@ -22,6 +22,9 @@ type Graph struct {
 
 	// set of nodeIds
 	nodeset map[string]bool
+
+	// number of links
+	numlinks int
 }
 
 func NewGraph() *Graph {
@@ -29,6 +32,7 @@ func NewGraph() *Graph {
 	g.outlinks = make(map[string]map[string]bool)
 	g.inbounds = make(map[string][]string)
 	g.nodeset = make(map[string]bool)
+	g.numlinks = 0
 	return g
 }
 
@@ -44,6 +48,7 @@ func (g *Graph) AddLink(from, to string) {
 		g.outlinks[from] = make(map[string]bool)
 	}
 
+	g.numlinks += 1
 	g.outlinks[from][to] = true
 	g.inbounds[to] = append(g.inbounds[to], from)
 }
@@ -56,6 +61,11 @@ func (g *Graph) GetNodes() []string {
 	}
 
 	return result
+}
+
+// see how many links
+func (g *Graph) GetNumLinks() int {
+	return g.numlinks
 }
 
 // see how many nodes are here
@@ -112,7 +122,7 @@ func (g *Graph) GetNumNeighbors(nodeId string) int {
 }
 
 func main() {
-	cnt := 0
+
 	lineReader := bufio.NewReader(os.Stdin)
 
 	g := NewGraph()
@@ -141,19 +151,14 @@ func main() {
 
 		lhs := segs[0]
 		rhs := segs[1]
-		log.Printf("[%d]: %s -> %s\n", cnt, lhs, rhs)
 		g.AddLink(lhs, rhs)
-		cnt++
 	}
 
 	fmt.Println("begin_data:")
 
 	fmt.Printf("number_of_nodes: %d\n", g.GetNumNodes())
-	allNodes := g.GetNodes()
-	fmt.Println("nodes:")
-	for _, node := range allNodes {
-		fmt.Println(node)
-	}
+	fmt.Printf("number_of_links: %d\n", g.GetNumLinks())
+
 	if targetNodeId != "" {
 		fmt.Printf("target_node: %s\n", targetNodeId)
 		inbounds := g.GetInbounds(targetNodeId)
