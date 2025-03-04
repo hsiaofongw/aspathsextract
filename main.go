@@ -121,6 +121,60 @@ func (g *Graph) GetNumNeighbors(nodeId string) int {
 	return len(res)
 }
 
+type PageRankAlgoParams struct {
+	// should take 0.85 by default, as suggested by the PageRank paper.
+	DumpingFactor float64
+}
+
+type PageRank struct {
+	g      *Graph
+	scores map[string]float64
+	params *PageRankAlgoParams
+}
+
+func NewPageRank(g *Graph, params *PageRankAlgoParams) *PageRank {
+	pr := new(PageRank)
+	pr.g = g
+	pr.params = params
+	if params == nil {
+		pr.params = new(PageRankAlgoParams)
+		pr.params.DumpingFactor = 0.85
+	}
+	scores := make(map[string]float64)
+	pr.scores = scores
+	nodes := g.GetNodes()
+	N := len(nodes)
+	for _, node := range nodes {
+		scores[node] = float64(1) / float64(N)
+	}
+	return pr
+}
+
+func (pr *PageRank) UpdateOneNode(targetNodeId string) {
+	inbNodes := pr.g.GetInbounds(targetNodeId)
+	var newProb float64 = 0
+	N := pr.g.GetNumNodes()
+	d := pr.params.DumpingFactor
+	for _, inNode := range inbNodes {
+		numOuts := pr.g.GetNumOutbounds(inNode)
+		prob := pr.scores[inNode]
+		if numOuts > 0 {
+			contrib := float64(1) / float64(numOuts)
+			newProb += contrib * prob * d
+		}
+	}
+
+	newProb += (1 - d) * (float64(1) / float64(N))
+	pr.scores[targetNodeId] = newProb
+}
+
+func (pr *PageRank) UpdateAllNodes() {
+	nodes := pr.g.GetNodes()
+	for _, node := range nodes {
+		pr.UpdateOneNode(node)
+	}
+}
+
 func main() {
 
 	lineReader := bufio.NewReader(os.Stdin)
