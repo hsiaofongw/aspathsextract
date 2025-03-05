@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"os"
 
 	"sort"
 
@@ -16,10 +19,16 @@ type NodeScore struct {
 	Rank   int
 }
 
-func calcPageRank() {
+type CommandCtx struct {
+	JSON bool
+}
+
+type PageRankCmd struct{}
+
+func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 	g, err := model.NewGraphFromStdin()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	pr := model.NewPageRank(g, nil)
@@ -46,52 +55,72 @@ func calcPageRank() {
 		node.Rank = i
 		fmt.Printf("[%d] %s -> %f\n", node.Rank, node.NodeId, node.Score)
 	}
+
+	return nil
+}
+
+type LinksCmd struct {
+	TargetNodeId string `arg:"" name:"targetnodeid" help:"Id of Target Node to analyze"`
+}
+
+func (cmd *LinksCmd) Run(ctx *CommandCtx) error {
+	targetNodeId := cmd.TargetNodeId
+	if targetNodeId == "" {
+		return errors.New("empty node id")
+	}
+
+	g, err := model.NewGraphFromStdin()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("begin_data:")
+	fmt.Printf("target_node: %s\n", targetNodeId)
+	inbounds := g.GetInbounds(targetNodeId)
+	fmt.Printf("num_inbounds: %d\n", len(inbounds))
+	fmt.Println("inbounds:")
+	for _, nodeId := range inbounds {
+		fmt.Println(nodeId)
+	}
+
+	fmt.Printf("num_outbounds: %d\n", g.GetNumOutbounds(targetNodeId))
+	outbounds := g.GetOutbounds(targetNodeId)
+	fmt.Println("outbounds:")
+	for _, nodeId := range outbounds {
+		fmt.Println(nodeId)
+	}
+
+	fmt.Printf("num_neighbors_total: %d\n", g.GetNumNeighbors(targetNodeId))
+
+	return nil
+}
+
+type OverviewCmd struct{}
+
+func (cmd *OverviewCmd) Run(ctx *CommandCtx) error {
+	g, err := model.NewGraphFromStdin()
+	if err != nil {
+		return err
+	}
+
+	var output = struct {
+		NumNodes int `json:"number_of_nodes"`
+		NumLinks int `json:"number_of_links"`
+	}{NumNodes: g.GetNumNodes(), NumLinks: g.GetNumLinks()}
+
+	return json.NewEncoder(os.Stdout).Encode(output)
 }
 
 var CLI struct {
-	JSON     bool     `help:"Output in JSON."`
-	PageRank struct{} `cmd:"" name:"pagerank" help:"Output PageRank Calculations."`
-	Links    struct{} `cmd:"" name:"link" help:"Output Link Analysis."`
+	JSON     bool        `help:"Output in JSON."`
+	PageRank PageRankCmd `cmd:"" name:"pagerank" help:"Output PageRank Calculations."`
+	Links    LinksCmd    `cmd:"" name:"link" help:"Output Link Analysis."`
+	Overview OverviewCmd `cmd:"" name:"overview" help:"Overviewing the whole graph."`
 }
 
 func main() {
 	ctx := kong.Parse(&CLI)
-	switch ctx.Command() {
-	case "rm <path>":
-		panic("not implemented")
-	case "pagerank":
-		calcPageRank()
-	default:
-		panic(ctx.Command())
-	}
 
-	// targetNodeId := ""
-	// if len(os.Args) >= 2 && os.Args[1] != "" {
-	// 	targetNodeId = os.Args[1]
-	// }
-
-	// fmt.Println("begin_data:")
-
-	// fmt.Printf("number_of_nodes: %d\n", g.GetNumNodes())
-	// fmt.Printf("number_of_links: %d\n", g.GetNumLinks())
-
-	// if targetNodeId != "" {
-	// 	fmt.Printf("target_node: %s\n", targetNodeId)
-	// 	inbounds := g.GetInbounds(targetNodeId)
-	// 	fmt.Printf("num_inbounds: %d\n", len(inbounds))
-	// 	fmt.Println("inbounds:")
-	// 	for _, nodeId := range inbounds {
-	// 		fmt.Println(nodeId)
-	// 	}
-
-	// 	fmt.Printf("num_outbounds: %d\n", g.GetNumOutbounds(targetNodeId))
-	// 	outbounds := g.GetOutbounds(targetNodeId)
-	// 	fmt.Println("outbounds:")
-	// 	for _, nodeId := range outbounds {
-	// 		fmt.Println(nodeId)
-	// 	}
-
-	// 	fmt.Printf("num_neighbors_total: %d\n", g.GetNumNeighbors(targetNodeId))
-	// }
-
+	err := ctx.Run(&CommandCtx{JSON: CLI.JSON})
+	ctx.FatalIfErrorf(err)
 }
