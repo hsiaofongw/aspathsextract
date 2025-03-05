@@ -14,26 +14,49 @@ import (
 )
 
 type NodeScore struct {
-	NodeId string
-	Score  float64
-	Rank   int
+	NodeId string  `json:"node_id"`
+	Score  float64 `json:"score"`
+	Rank   int     `json:"rank"`
 }
 
 type CommandCtx struct {
 	JSON bool
 }
 
-type PageRankCmd struct{}
+type PageRankCmd struct {
+	IterationCount *int `arg:"" name:"iters" optional:"" help:"Number of iterations, 100 by default"`
+}
 
 func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
+	iters := 100
+	if cmd.IterationCount != nil {
+		iters = *cmd.IterationCount
+	}
+
 	g, err := model.NewGraphFromStdin()
 	if err != nil {
 		return err
 	}
 
+	var output = struct {
+		DiffSquarePerIterations []float64    `json:"diff_square_per_iter"`
+		NodeAndScores           []*NodeScore `json:"node_and_scores"`
+	}{
+		DiffSquarePerIterations: make([]float64, 0),
+	}
+
 	pr := model.NewPageRank(g, nil)
-	for i := 0; i < 100; i++ {
-		log.Printf("iteration: %d diff: %f\n", i, pr.UpdateAllNodes())
+
+	iter_idx := 0
+	for iters != 0 {
+		d := pr.UpdateAllNodes()
+		if !ctx.JSON {
+			log.Printf("iteration: %d diff: %f\n", iter_idx, d)
+		}
+		output.DiffSquarePerIterations = append(output.DiffSquarePerIterations, d)
+
+		iters--
+		iter_idx++
 	}
 
 	nodes := g.GetNodes()
@@ -49,11 +72,22 @@ func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 		return ns[i].Score >= ns[j].Score
 	})
 
-	fmt.Println("begin page_rank_data:")
 	for i := 0; i < len(ns); i++ {
-		node := ns[i]
-		node.Rank = i
-		fmt.Printf("[%d] %s -> %f\n", node.Rank, node.NodeId, node.Score)
+		ns[i].Rank = i
+	}
+
+	if !ctx.JSON {
+		fmt.Println("begin page_rank_data:")
+		for i := 0; i < len(ns); i++ {
+			node := ns[i]
+			fmt.Printf("[%d] %s -> %f\n", node.Rank, node.NodeId, node.Score)
+		}
+	}
+
+	output.NodeAndScores = ns
+
+	if ctx.JSON {
+		return json.NewEncoder(os.Stdout).Encode(output)
 	}
 
 	return nil
@@ -114,7 +148,7 @@ func (cmd *OverviewCmd) Run(ctx *CommandCtx) error {
 }
 
 var CLI struct {
-	JSON     bool        `help:"Output in JSON."`
+	JSON     bool        `help:"Forcibly outputs in JSON, otherwise the format of outputs would be command-specific."`
 	PageRank PageRankCmd `cmd:"" name:"pagerank" help:"Output PageRank Calculations."`
 	Links    LinksCmd    `cmd:"" name:"link" aliases:"links" help:"Output Link Analysis."`
 	Overview OverviewCmd `cmd:"" name:"overview" help:"Overviewing the whole graph."`

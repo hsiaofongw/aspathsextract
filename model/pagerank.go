@@ -1,6 +1,8 @@
 package model
 
-import "math"
+import (
+	"math"
+)
 
 type PageRankAlgoParams struct {
 	// should take 0.85 by default, as suggested by the PageRank paper.
@@ -55,11 +57,8 @@ func (pr *PageRank) UpdateOneNode(targetNodeId string) float64 {
 func (pr *PageRank) UpdateAllNodes() float64 {
 	nodes := pr.g.GetNodes()
 	var diff float64 = 0
-	var norm2 float64 = 0
 	for _, node := range nodes {
 		diff += pr.UpdateOneNode(node)
-		s := pr.scores[node]
-		norm2 += s * s
 	}
 
 	return math.Sqrt(diff)
