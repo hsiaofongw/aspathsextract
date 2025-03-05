@@ -54,8 +54,8 @@ func NewGraphFromStdin() (*Graph, error) {
 		line = strings.TrimSpace(line)
 		segs := strings.Split(line, ",")
 		for i := 0; i < len(segs)-1; i++ {
-			lhs := segs[i]
-			rhs := segs[i+1]
+			lhs := strings.TrimSpace(segs[i])
+			rhs := strings.TrimSpace(segs[i+1])
 			g.AddLink(lhs, rhs)
 		}
 	}
