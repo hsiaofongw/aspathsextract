@@ -17,19 +17,23 @@ type Graph struct {
 
 	// nodeId -> set of nodes that points to it
 	// e.g.: map['a'] = { 'b', 'c', 'd' } iif. 'b', 'c', 'd' all has links points to 'a'.
-	inbounds map[string][]string
+	inbounds map[string]map[string]bool
 
 	// set of nodeIds
 	nodeset map[string]bool
 
-	// number of links
+	// set of any inbound(or outbound) neighbors
+	neighbors map[string]map[string]bool
+
+	// num links
 	numlinks int
 }
 
 func NewGraph() *Graph {
 	g := new(Graph)
 	g.outlinks = make(map[string]map[string]bool)
-	g.inbounds = make(map[string][]string)
+	g.inbounds = make(map[string]map[string]bool)
+	g.neighbors = make(map[string]map[string]bool)
 	g.nodeset = make(map[string]bool)
 	g.numlinks = 0
 	return g
@@ -71,9 +75,20 @@ func (g *Graph) AddLink(from, to string) {
 		g.outlinks[from] = make(map[string]bool)
 	}
 
-	g.numlinks += 1
 	g.outlinks[from][to] = true
-	g.inbounds[to] = append(g.inbounds[to], from)
+	if _, found := g.inbounds[to]; !found {
+		g.inbounds[to] = make(map[string]bool)
+	}
+	g.inbounds[to][from] = true
+	if _, found := g.neighbors[from]; !found {
+		g.neighbors[from] = make(map[string]bool)
+	}
+	g.neighbors[from][to] = true
+	if _, found := g.neighbors[to]; !found {
+		g.neighbors[to] = make(map[string]bool)
+	}
+	g.neighbors[to][from] = true
+	g.numlinks++
 }
 
 // see what nodes are here
@@ -99,7 +114,11 @@ func (g *Graph) GetNumNodes() int {
 // see who is pointing to nodeId
 func (g *Graph) GetInbounds(nodeId string) []string {
 	if nodes, found := g.inbounds[nodeId]; found {
-		return nodes
+		res := make([]string, 0)
+		for n := range nodes {
+			res = append(res, n)
+		}
+		return res
 	}
 
 	result := make([]string, 0)
@@ -126,20 +145,23 @@ func (g *Graph) GetNumOutbounds(nodeId string) int {
 	return 0
 }
 
-// count neighbors, for both inbound and outbound
+// count neighbors, regardless of inbound or outbound
 func (g *Graph) GetNumNeighbors(nodeId string) int {
-	res := make(map[string]bool)
-	if ibs, found := g.inbounds[nodeId]; found {
-		for _, ib := range ibs {
-			res[ib] = true
+	if nodes, found := g.neighbors[nodeId]; found {
+		return len(nodes)
+	}
+
+	return 0
+}
+
+// list all neighbors, regardless of inbound or outbound
+func (g *Graph) GetNeighbors(nodeId string) []string {
+	res := make([]string, 0)
+	if nodes, found := g.neighbors[nodeId]; found {
+		for n := range nodes {
+			res = append(res, n)
 		}
 	}
 
-	if m, found := g.outlinks[nodeId]; found {
-		for k := range m {
-			res[k] = true
-		}
-	}
-
-	return len(res)
+	return res
 }

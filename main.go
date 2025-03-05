@@ -74,25 +74,27 @@ func (cmd *LinksCmd) Run(ctx *CommandCtx) error {
 		return err
 	}
 
-	fmt.Println("begin_data:")
-	fmt.Printf("target_node: %s\n", targetNodeId)
+	var output = struct {
+		TargetNodeId   string   `json:"target_node"`
+		NumInbounds    int      `json:"num_inbounds"`
+		NumOutbounds   int      `json:"num_outbounds"`
+		Inbounds       []string `json:"inbounds"`
+		Outbounds      []string `json:"outbounds"`
+		NeighborsTotal int      `json:"num_neighbors_total"`
+		Neighbors      []string `json:"neighbors"`
+	}{
+		TargetNodeId: targetNodeId,
+	}
+
 	inbounds := g.GetInbounds(targetNodeId)
-	fmt.Printf("num_inbounds: %d\n", len(inbounds))
-	fmt.Println("inbounds:")
-	for _, nodeId := range inbounds {
-		fmt.Println(nodeId)
-	}
+	output.NumInbounds = len(inbounds)
+	output.Inbounds = inbounds
+	output.NumOutbounds = g.GetNumOutbounds(targetNodeId)
+	output.Outbounds = g.GetOutbounds(targetNodeId)
+	output.NeighborsTotal = g.GetNumNeighbors(targetNodeId)
+	output.Neighbors = g.GetNeighbors(targetNodeId)
 
-	fmt.Printf("num_outbounds: %d\n", g.GetNumOutbounds(targetNodeId))
-	outbounds := g.GetOutbounds(targetNodeId)
-	fmt.Println("outbounds:")
-	for _, nodeId := range outbounds {
-		fmt.Println(nodeId)
-	}
-
-	fmt.Printf("num_neighbors_total: %d\n", g.GetNumNeighbors(targetNodeId))
-
-	return nil
+	return json.NewEncoder(os.Stdout).Encode(output)
 }
 
 type OverviewCmd struct{}
@@ -114,7 +116,7 @@ func (cmd *OverviewCmd) Run(ctx *CommandCtx) error {
 var CLI struct {
 	JSON     bool        `help:"Output in JSON."`
 	PageRank PageRankCmd `cmd:"" name:"pagerank" help:"Output PageRank Calculations."`
-	Links    LinksCmd    `cmd:"" name:"link" help:"Output Link Analysis."`
+	Links    LinksCmd    `cmd:"" name:"link" aliases:"links" help:"Output Link Analysis."`
 	Overview OverviewCmd `cmd:"" name:"overview" help:"Overviewing the whole graph."`
 }
 
