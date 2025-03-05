@@ -10,7 +10,8 @@ RUN \
   python3 \
   python3-pip \
   python3-venv \
-  golang && \
+  golang \
+  bzip2 && \
   rm -rf /var/lib/apt/lists/*
 
 RUN <<EOF
