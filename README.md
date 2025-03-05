@@ -38,8 +38,8 @@ Get Links:
 cat aspaths.txt | python3 tolinks.py > links.txt
 ```
 
-Analyze (with specific ASN as target)
+Analyze (seeing helps first):
 
 ```
-cat links.txt | go run main.go 4242421080
+go run main.go --help
 ```
