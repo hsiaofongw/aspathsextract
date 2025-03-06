@@ -2,6 +2,21 @@
 
 set -e
 
+function fetch_mrtdump() {
+  if [ -f "$mrtDumpPath" ]; then
+    echo "File $mrtDumpPath is already exist"
+    if test ! `find $mrtDumpPath -mmin +"$intvMins"`; then
+      echo "File $mrtDumpPath is still fresh"
+      return
+    fi
+
+    echo "File $mrtDumpPath exist but outdated, now updating it"
+  fi
+
+  echo "[$(date --rfc-3339=seconds)]" "Getting MRTDump data: $mrtBzUrl -> $mrtDumpPath"
+  curl -L -o - $mrtBzUrl | bzip2 -d > $mrtDumpPath
+}
+
 pwd=$PWD
 echo "[$(date --rfc-3339=seconds)]" "Present working directory: $pwd"
 
@@ -21,17 +36,16 @@ echo "[$(date --rfc-3339=seconds)]" "Building program..."
 go build -o $pwd/main $pwd/main.go
 
 intv=${INTV_SECS:-"86400"}
+intvMins=$((intv/60))
 iter=0
 maxIter=${MAX_ITER:-"inf"}
 while /bin/true; do
   echo "[$(date --rfc-3339=seconds)]" iter: $iter
 
-  # todo: test cache validity, downloads the latest version only when it is outdated.
   mrtBzUrl=$(cat $pwd/resources/dn42-mrtdump6.mrt.bz2.txt)
   mrtDumpPath=$pwd/data/master6.mrt
   mkdir -p $(dirname $mrtDumpPath)
-  echo "[$(date --rfc-3339=seconds)]" "Getting MRTDump data: $mrtBzUrl -> $mrtDumpPath"
-  curl -L -o - $mrtBzUrl | bzip2 -d > $mrtDumpPath
+  fetch_mrtdump
 
   asPathsDataFile=$pwd/data/aspaths.txt
   echo "[$(date --rfc-3339=seconds)]" "Parsing MRTDump data: $mrtDumpPath -> $asPathsDataFile"

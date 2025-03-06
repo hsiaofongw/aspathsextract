@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"sort"
 
@@ -14,9 +15,12 @@ import (
 )
 
 type NodeScore struct {
-	NodeId string  `json:"node_id"`
-	Score  float64 `json:"score"`
-	Rank   int     `json:"rank"`
+	NodeId       string  `json:"node_id"`
+	Score        float64 `json:"score"`
+	Rank         int     `json:"rank"`
+	NumPeers     int     `json:"num_peers"`
+	NumInbounds  int     `json:"num_inbounds"`
+	NumOutbounds int     `json:"num_outbounds"`
 }
 
 type CommandCtx struct {
@@ -41,6 +45,7 @@ func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 	var output = struct {
 		DiffSquarePerIterations []float64    `json:"diff_square_per_iter"`
 		NodeAndScores           []*NodeScore `json:"node_and_scores"`
+		Timestamp               int64        `json:"generated_at"`
 	}{
 		DiffSquarePerIterations: make([]float64, 0),
 	}
@@ -74,6 +79,9 @@ func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 
 	for i := 0; i < len(ns); i++ {
 		ns[i].Rank = i
+		ns[i].NumInbounds = len(g.GetInbounds(ns[i].NodeId))
+		ns[i].NumOutbounds = g.GetNumOutbounds(ns[i].NodeId)
+		ns[i].NumPeers = g.GetNumNeighbors(ns[i].NodeId)
 	}
 
 	if !ctx.JSON {
@@ -87,7 +95,7 @@ func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 	output.NodeAndScores = ns
 
 	if ctx.JSON {
-		// todo: add timestamp
+		output.Timestamp = time.Now().UnixMilli()
 		return json.NewEncoder(os.Stdout).Encode(output)
 	}
 
