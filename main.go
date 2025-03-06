@@ -87,6 +87,7 @@ func (cmd *PageRankCmd) Run(ctx *CommandCtx) error {
 	output.NodeAndScores = ns
 
 	if ctx.JSON {
+		// todo: add timestamp
 		return json.NewEncoder(os.Stdout).Encode(output)
 	}
 
