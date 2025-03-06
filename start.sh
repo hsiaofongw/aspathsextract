@@ -13,6 +13,6 @@ docker run \
   --name pagerank \
   -v $scriptDir:/root/work \
   -v $scriptDir/data:/root/work/data \
-  --entrypoint entrypoint.sh \
+  --entrypoint /root/work/entrypoint.sh \
   -w /root/work \
     test:latest

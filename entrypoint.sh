@@ -5,8 +5,6 @@ set -e
 pwd=$PWD
 echo "[$(date --rfc-3339=seconds)]" "Present working directory: $pwd"
 
-exit 0
-
 if ! [ -d "$pwd/venv" ]; then
   venvDir=$pwd/venv
   echo "[$(date --rfc-3339=seconds)]" "Creating venv dir at $venvDir"
