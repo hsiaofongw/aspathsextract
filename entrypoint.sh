@@ -26,6 +26,7 @@ maxIter=${MAX_ITER:-"inf"}
 while /bin/true; do
   echo "[$(date --rfc-3339=seconds)]" iter: $iter
 
+  # todo: test cache validity, downloads the latest version only when it is outdated.
   mrtBzUrl=$(cat $pwd/resources/dn42-mrtdump6.mrt.bz2.txt)
   mrtDumpPath=$pwd/data/master6.mrt
   mkdir -p $(dirname $mrtDumpPath)
