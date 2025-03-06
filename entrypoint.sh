@@ -20,7 +20,7 @@ python3 -m pip install -r $pwd/requirements.txt
 echo "[$(date --rfc-3339=seconds)]" "Building program..."
 go build -o $pwd/main $pwd/main.go
 
-intv=${INTV_SECS:"86400"}
+intv=${INTV_SECS:-"86400"}
 iter=0
 maxIter=${MAX_ITER:-"inf"}
 while /bin/true; do
